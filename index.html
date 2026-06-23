@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-tw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>把煩惱沖掉 - 療癒小遊戲</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 50%, #81d4fa 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 浴室風格背景 */
+        .bathroom-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* 泡泡動畫 */
+        .bubbles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .bubble {
+            position: absolute;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float-bubble linear infinite;
+        }
+
+        @keyframes float-bubble {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(50px);
+                opacity: 0;
+            }
+        }
+
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 90%;
+            max-width: 600px;
+            height: 90%;
+        }
+
+        /* 馬桶容器 */
+        .toilet-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 3/4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 30px;
+        }
+
+        /* SVG馬桶 */
+        svg.toilet {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.1));
+        }
+
+        /* 水面 */
+        .water-surface {
+            position: absolute;
+            width: 85%;
+            height: 35%;
+            bottom: 28%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50%;
+            background: linear-gradient(135deg, #81d4fa 0%, #4fc3f7 100%);
+            box-shadow: inset 0 -8px 15px rgba(0, 0, 0, 0.1), 
+                        inset 0 8px 15px rgba(255, 255, 255, 0.3),
+                        0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            z-index: 5;
+        }
+
+        /* 漩渦效果 */
+        .whirlpool {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 0%, rgba(0, 100, 200, 0.2) 100%);
+            opacity: 0;
+            animation: none;
+        }
+
+        .whirlpool.active {
+            animation: whirlpool-spin 3s ease-in forwards;
+        }
+
+        @keyframes whirlpool-spin {
+            0% {
+                opacity: 0;
+                transform: scale(1);
+            }
+            30% {
+                opacity: 1;
+                transform: scale(1.1) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3) rotate(720deg);
+            }
+        }
+
+        /* 輸入框 */
+        .input-wrapper {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            z-index: 8;
+        }
+
+        .worry-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            color: #0288d1;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .worry-input::placeholder {
+            color: rgba(2, 136, 209, 0.5);
+        }
+
+        .worry-input:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #0288d1;
+            box-shadow: 0 0 15px rgba(3, 169, 244, 0.3);
+        }
+
+        /* 按鈕 */
+        .button-group {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .flush-btn {
+            padding: 14px 30px;
+            background: linear-gradient(135deg, #0288d1 0%, #0277bd 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(2, 136, 209, 0.3);
+            min-width: 150px;
+        }
+
+        .flush-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(2, 136, 209, 0.4);
+        }
+
+        .flush-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .flush-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .reset-btn {
+            padding: 14px 30px;
+            background: linear-gradient(135deg, #26a69a 0%, #00897b 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);
+            min-width: 150px;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(38, 166, 154, 0.4);
+        }
+
+        /* 鼓勵訊息 */
+        .encouragement-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 24px;
+            color: #0288d1;
+            font-weight: 600;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+            animation: none;
+            max-width: 80%;
+            line-height: 1.6;
+        }
+
+        .encouragement-message.show {
+            animation: show-encouragement 4s ease-in-out forwards;
+        }
+
+        @keyframes show-encouragement {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            10% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            85% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+        }
+
+        /* 計數器 */
+        .counter-display {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px 25px;
+            border-radius: 20px;
+            font-size: 16px;
+            color: #0288d1;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+            z-index: 15;
+        }
+
+        .counter-number {
+            font-size: 24px;
+            color: #ff6f00;
+            font-weight: 700;
+        }
+
+        /* 成就系統 */
+        .achievement-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 20px;
+            color: #333;
+            font-weight: 600;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 101;
+            animation: none;
+        }
+
+        .achievement-popup.show {
+            animation: show-achievement 3s ease-in-out forwards;
+        }
+
+        @keyframes show-achievement {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5) rotate(-10deg);
+            }
+            10% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.1) rotate(5deg);
+            }
+            85% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8) rotate(10deg);
+            }
+        }
+
+        /* 掉落文字動畫 */
+        .falling-worry {
+            position: absolute;
+            font-size: 16px;
+            color: #0288d1;
+            font-weight: 600;
+            pointer-events: none;
+            opacity: 0.8;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+            animation: fall-text 4s ease-in forwards;
+        }
+
+        @keyframes fall-text {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                animation-timing-function: ease-out;
+            }
+            40% {
+                opacity: 0.8;
+                transform: translateY(50px) scale(0.95);
+            }
+            60% {
+                opacity: 0.5;
+                transform: translateY(100px) scaleX(0.7) scaleY(0.9);
+            }
+            85% {
+                opacity: 0.2;
+                transform: translateY(120px) scaleX(0.3) scaleY(0.7);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(150px) scaleX(0) scaleY(0.5);
+            }
+        }
+
+        /* 手機響應式 */
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                max-height: 95vh;
+            }
+
+            .toilet-container {
+                max-width: 300px;
+            }
+
+            .encouragement-message {
+                padding: 30px 20px;
+                font-size: 20px;
+            }
+
+            .counter-display {
+                top: 10px;
+                right: 10px;
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+
+            .counter-number {
+                font-size: 18px;
+            }
+
+            .flush-btn,
+            .reset-btn {
+                padding: 12px 24px;
+                font-size: 14px;
+                min-width: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toilet-container {
+                max-width: 250px;
+                margin-bottom: 20px;
+            }
+
+            .button-group {
+                margin-top: 20px;
+                gap: 10px;
+            }
+
+            .flush-btn,
+            .reset-btn {
+                padding: 10px 20px;
+                font-size: 13px;
+                min-width: 100px;
+            }
+
+            .counter-display {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .counter-number {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景 -->
+    <div class="bathroom-bg"></div>
+    
+    <!-- 泡泡 -->
+    <div class="bubbles" id="bubblesContainer"></div>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 馬桶 -->
+        <div class="toilet-container">
+            <svg class="toilet" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                <!-- 馬桶座 -->
+                <g id="toilet-seat">
+                    <!-- 馬桶圈 -->
+                    <ellipse cx="150" cy="280" rx="110" ry="50" fill="#f5f5f5" stroke="#ddd" stroke-width="2"/>
+                    <!-- 馬桶蓋 -->
+                    <ellipse cx="150" cy="270" rx="105" ry="45" fill="#fff" stroke="#e0e0e0" stroke-width="2"/>
+                    <!-- 馬桶蓋陰影 -->
+                    <path d="M 150 270 Q 150 250 150 225 Q 50 225 50 280" fill="none" stroke="#ddd" stroke-width="1" opacity="0.5"/>
+                </g>
+
+                <!-- 馬桶碗 -->
+                <g id="toilet-bowl">
+                    <!-- 外邊框 -->
+                    <ellipse cx="150" cy="200" rx="100" ry="80" fill="#f9f9f9" stroke="#d0d0d0" stroke-width="2"/>
+                    <!-- 馬桶內側 -->
+                    <path d="M 50 200 Q 50 280 150 300 Q 250 280 250 200" fill="#fafafa" stroke="#ccc" stroke-width="1"/>
+                    <!-- 馬桶外側陰影 -->
+                    <ellipse cx="150" cy="160" rx="100" ry="40" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="2"/>
+                </g>
+
+                <!-- 馬桶水箱 -->
+                <g id="water-tank">
+                    <!-- 主體 -->
+                    <rect x="80" y="20" width="140" height="120" rx="8" fill="#f0f0f0" stroke="#ccc" stroke-width="2"/>
+                    <!-- 內部 -->
+                    <rect x="85" y="30" width="130" height="100" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+                    <!-- 水 -->
+                    <rect x="90" y="70" width="120" height="55" fill="#81d4fa" stroke="none" opacity="0.6"/>
+                    <!-- 沖水把手 -->
+                    <g id="flush-handle">
+                        <rect x="200" y="60" width="15" height="50" rx="7" fill="#e0e0e0" stroke="#999" stroke-width="1"/>
+                        <circle cx="207.5" cy="90" r="10" fill="#999" stroke="#666" stroke-width="1"/>
+                    </g>
+                </g>
+
+                <!-- 連接管 -->
+                <line x1="150" y1="140" x2="150" y2="200" stroke="#ccc" stroke-width="8" stroke-linecap="round"/>
+            </svg>
+
+            <!-- 水面 -->
+            <div class="water-surface">
+                <div class="whirlpool" id="whirlpool"></div>
+                <!-- 波紋 -->
+                <svg style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+                    <defs>
+                        <filter id="water-ripple">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="5" result="noise"/>
+                            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
+                        </filter>
+                    </defs>
+                </svg>
+            </div>
+
+            <!-- 輸入框 -->
+            <div class="input-wrapper">
+                <input type="text" class="worry-input" id="worryInput" placeholder="把煩惱輸入在這裡..." maxlength="50">
+            </div>
+        </div>
+
+        <!-- 按鈕組 -->
+        <div class="button-group">
+            <button class="flush-btn" id="flushBtn">把煩惱沖掉</button>
+            <button class="reset-btn" id="resetBtn">重置計數</button>
+        </div>
+    </div>
+
+    <!-- 計數器 -->
+    <div class="counter-display">
+        <div>你已經沖掉</div>
+        <div class="counter-number" id="counterNumber">0</div>
+        <div>個煩惱</div>
+    </div>
+
+    <!-- 鼓勵訊息 -->
+    <div class="encouragement-message" id="encouragementMessage"></div>
+
+    <!-- 成就訊息 -->
+    <div class="achievement-popup" id="achievementPopup"></div>
+
+    <script>
+        // ==================== 配置 ====================
+        const CONFIG = {
+            worries: [
+                '今天的煩惱先放下吧。',
+                '你已經很努力了。',
+                '一切都會慢慢變好的。',
+                '休息也是前進的一部分。',
+                '明天會是新的開始。',
+                '給自己一點時間。',
+                '你值得被善待。',
+                '不需要一次解決所有問題。',
+                '每一個小進步都是勝利。',
+                '你比你想像中更強大。',
+                '放下來，輕鬆一點。',
+                '相信自己能度過難關。'
+            ],
+            achievements: [
+                { count: 1, title: '🏆 第一次放下煩惱', icon: '🏆' },
+                { count: 10, title: '🏆 心情整理大師', icon: '🏆' },
+                { count: 50, title: '🏆 壓力清理專家', icon: '🏆' }
+            ]
+        };
+
+        // ==================== 狀態管理 ====================
+        const STATE = {
+            count: parseInt(localStorage.getItem('worryCount') || '0'),
+            isAnimating: false,
+            unlockedAchievements: JSON.parse(localStorage.getItem('achievements') || '[]')
+        };
+
+        // ==================== 初始化 ====================
+        function init() {
+            generateBubbles();
+            updateCounter();
+            setupEventListeners();
+            loadAchievements();
+        }
+
+        function setupEventListeners() {
+            const flushBtn = document.getElementById('flushBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const worryInput = document.getElementById('worryInput');
+
+            flushBtn.addEventListener('click', flushWorry);
+            resetBtn.addEventListener('click', resetCounter);
+            worryInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !STATE.isAnimating && worryInput.value.trim()) {
+                    flushWorry();
+                }
+            });
+        }
+
+        // ==================== 泡泡生成 ====================
+        function generateBubbles() {
+            const container = document.getElementById('bubblesContainer');
+            const bubbleCount = window.innerWidth > 768 ? 15 : 10;
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                
+                const size = Math.random() * 40 + 20;
+                const delay = Math.random() * 4;
+                const left = Math.random() * 100;
+                const duration = Math.random() * 5 + 8;
+
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = left + '%';
+                bubble.style.bottom = '-' + size + 'px';
+                bubble.style.animationDelay = delay + 's';
+                bubble.style.animationDuration = duration + 's';
+
+                container.appendChild(bubble);
+            }
+        }
+
+        // ==================== 沖水主函數 ====================
+        function flushWorry() {
+            const worryInput = document.getElementById('worryInput');
+            const worry = worryInput.value.trim();
+
+            if (!worry) {
+                alert('請輸入你的煩惱喔');
+                return;
+            }
+
+            if (STATE.isAnimating) return;
+
+            STATE.isAnimating = true;
+            document.getElementById('flushBtn').disabled = true;
+
+            // 播放沖水聲
+            playFlushSound();
+
+            // 動畫序列
+            animateWorry(worry);
+        }
+
+        // ==================== 沖水動畫 ====================
+        function animateWorry(worry) {
+            const waterSurface = document.querySelector('.water-surface');
+            const toiletContainer = document.querySelector('.toilet-container');
+
+            // 創建掉落文字元素
+            const fallingText = document.createElement('div');
+            fallingText.className = 'falling-worry';
+            fallingText.textContent = worry;
+            fallingText.style.left = '50%';
+            fallingText.style.top = '50%';
+            fallingText.style.transform = 'translate(-50%, -50%)';
+            waterSurface.appendChild(fallingText);
+
+            // 觸發漩渦
+            const whirlpool = document.getElementById('whirlpool');
+            whirlpool.classList.add('active');
+
+            // 清除輸入框
+            document.getElementById('worryInput').value = '';
+
+            // 時間線
+            setTimeout(() => {
+                // 4秒後動畫完成
+                whirlpool.classList.remove('active');
+                fallingText.remove();
+
+                // 增加計數
+                STATE.count++;
+                updateCounter();
+                localStorage.setItem('worryCount', STATE.count);
+
+                // 顯示鼓勵訊息
+                showEncouragement();
+
+                // 檢查成就
+                checkAchievements();
+
+                // 恢復按鈕
+                STATE.isAnimating = false;
+                document.getElementById('flushBtn').disabled = false;
+
+                // 播放完成聲效
+                playCompleteSound();
+            }, 4000);
+        }
+
+        // ==================== 鼓勵訊息 ====================
+        function showEncouragement() {
+            const message = document.getElementById('encouragementMessage');
+            const randomWorry = CONFIG.worries[Math.floor(Math.random() * CONFIG.worries.length)];
+            
+            message.textContent = randomWorry;
+            message.classList.remove('show');
+            
+            // 觸發重排以重新開始動畫
+            void message.offsetWidth;
+            message.classList.add('show');
+
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 4000);
+        }
+
+        // ==================== 計數器 ====================
+        function updateCounter() {
+            document.getElementById('counterNumber').textContent = STATE.count;
+        }
+
+        function resetCounter() {
+            if (confirm('確定要重置計數嗎？')) {
+                STATE.count = 0;
+                STATE.unlockedAchievements = [];
+                localStorage.setItem('worryCount', '0');
+                localStorage.setItem('achievements', '[]');
+                updateCounter();
+                document.getElementById('worryInput').focus();
+                playCompleteSound();
+            }
+        }
+
+        // ==================== 成就系統 ====================
+        function checkAchievements() {
+            CONFIG.achievements.forEach(achievement => {
+                if (STATE.count === achievement.count && !STATE.unlockedAchievements.includes(achievement.count)) {
+                    STATE.unlockedAchievements.push(achievement.count);
+                    localStorage.setItem('achievements', JSON.stringify(STATE.unlockedAchievements));
+                    showAchievement(achievement.title);
+                }
+            });
+        }
+
+        function showAchievement(title) {
+            const popup = document.getElementById('achievementPopup');
+            popup.textContent = title;
+            popup.classList.remove('show');
+            
+            void popup.offsetWidth;
+            popup.classList.add('show');
+
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 3000);
+        }
+
+        function loadAchievements() {
+            STATE.unlockedAchievements = JSON.parse(localStorage.getItem('achievements') || '[]');
+        }
+
+        // ==================== 音效 ====================
+        function playFlushSound() {
+            // 使用 Web Audio API 生成沖水聲
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioContext.currentTime;
+
+            // 沖水聲 - 低頻噪音
+            const noiseBuffer = audioContext.createBufferSource();
+            const bufferLength = audioContext.sampleRate * 2;
+            const noiseData = audioContext.createBuffer(1, bufferLength, audioContext.sampleRate);
+            const output = noiseData.getChannelData(0);
+            
+            for (let i = 0; i < bufferLength; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            noiseBuffer.buffer = noiseData;
+            
+            // 濾波器 - 創建低通效果
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(2000, now);
+            filter.frequency.exponentialRampToValueAtTime(500, now + 2);
+            
+            // 包絡線
+            const gainNode = audioContext.createGain();
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.05, now + 2);
+            
+            noiseBuffer.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            noiseBuffer.start(now);
+            noiseBuffer.stop(now + 2);
+
+            // 水流音效 - 較高頻率
+            setTimeout(() => {
+                const waterBuffer = audioContext.createBufferSource();
+                const waterData = audioContext.createBuffer(1, audioContext.sampleRate * 1.5, audioContext.sampleRate);
+                const waterOutput = waterData.getChannelData(0);
+                
+                for (let i = 0; i < waterData.length; i++) {
+                    waterOutput[i] = (Math.random() * 2 - 1) * 0.5;
+                }
+                
+                waterBuffer.buffer = waterData;
+                
+                const waterFilter = audioContext.createBiquadFilter();
+                waterFilter.type = 'bandpass';
+                waterFilter.frequency.setValueAtTime(1500, audioContext.currentTime);
+                
+                const waterGain = audioContext.createGain();
+                waterGain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                waterGain.gain.exponentialRampToValueAtTime(0.02, audioContext.currentTime + 1.5);
+                
+                waterBuffer.connect(waterFilter);
+                waterFilter.connect(waterGain);
+                waterGain.connect(audioContext.destination);
+                
+                waterBuffer.start(audioContext.currentTime);
+                waterBuffer.stop(audioContext.currentTime + 1.5);
+            }, 500);
+        }
+
+        function playCompleteSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioContext.currentTime;
+
+            // 完成聲 - 上升的音調
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(500, now);
+            oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.5);
+
+            const gainNode = audioContext.createGain();
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0, now + 0.5);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.5);
+        }
+
+        // ==================== 視窗調整 ====================
+        window.addEventListener('resize', () => {
+            // 響應式調整
+            if (window.innerWidth <= 480) {
+                document.querySelectorAll('.toilet-container').forEach(el => {
+                    el.style.maxWidth = '250px';
+                });
+            }
+        });
+
+        // ==================== 啟動 ====================
+        init();
+        document.getElementById('worryInput').focus();
+    </script>
+</body>
+</html>
